@@ -1,0 +1,35 @@
+trigger:
+  - '*' # run on all branches
+
+jobs: 
+  - job: 'CheckTerraform'
+    displayName: 'Check Terraform'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: TerraformInstaller@2
+        displayName: 'Install Terraform'
+      - task: TerraformCLI@0
+        displayName: 'Terraform Format'
+        inputs:
+          command: 'fmt'
+      - checkout: self
+        persistCredentials: true
+        fetchDepth: 0 # fetch all history
+        clean: true
+    
+      # Check for changelog entry
+      - bash: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "##vso[task.logissue type=error]CHANGELOG.md not found"
+            exit 1
+          fi
+          if [ -z "$(git diff origin/$PULL_REQUEST_SOURCE_BRANCH_NAME -- CHANGELOG.md)" ]; then
+            echo "##vso[task.logissue type=error]CHANGELOG.md not updated"
+            exit 1
+          fi
+        displayName: 'Check for changelog entry'
+        condition: eq(variables['Build.Reason'], 'PullRequest')
+        env:
+          PULL_REQUEST_SOURCE_BRANCH_NAME: $(System.PullRequest.targetBranchName)
+          

@@ -1,0 +1,20 @@
+# A supplementary pipeline to tag the version modules
+# must be used in combination with main branch protection and changelog enforcement
+
+trigger:
+  - 'main' # only run on main branch to avoid erroneous tagging
+
+jobs:
+  job: 'TagVersionModules'
+  displayName: 'Tag Version Modules'
+  steps:
+    - checkout: self
+      persistCredentials: true
+      fetchDepth: 0 # fetch all history
+      clean: true
+    
+    - task: Bash@3
+      inputs:
+        filepath: scripts/version-modules.sh
+        arguments: CHANGELOG.md
+      displayName: 'Tag Version Modules'
